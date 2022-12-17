@@ -124,7 +124,7 @@ class _RepeatSampler(object):
 
 
 class LoadImages:  # for inference
-    def __init__(self, path, img_size=640, stride=32):
+    def __init__(self, path, img_size=640, stride=32 mask=[0,0]):
         p = str(Path(path).absolute())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -145,6 +145,8 @@ class LoadImages:  # for inference
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
+        self.mask = mask
+
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -165,6 +167,18 @@ class LoadImages:  # for inference
             # Read video
             self.mode = 'video'
             ret_val, img0 = self.cap.read()
+            # *******************************************
+            h, w, _ = img0.shape
+
+            for i in range(len(self.mask)):
+                if self.mask[i][0] > self.mask[i][1]:
+                    img0 = img0[self.mask[i][1]:h, 0:w]
+                    h = h - self.mask[i][1]
+                if self.mask[i][1] > self.mask[i][0]:
+                    img0 = img0[0:h, self.mask[i][0]:w]
+                    w = w - self.mask[i][0]
+            # *******************************************
+
             if not ret_val:
                 self.count += 1
                 self.cap.release()
