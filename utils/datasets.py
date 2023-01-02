@@ -26,9 +26,9 @@ from copy import deepcopy
 from torchvision.utils import save_image
 from torchvision.ops import roi_pool, roi_align, ps_roi_pool, ps_roi_align
 
-from Yolov7_StrongSORT_OSNet.yolov7.utils.general import check_requirements, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, segment2box, segments2boxes, \
+from yolov7.utils.general import check_requirements, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, segment2box, segments2boxes, \
     resample_segments, clean_str
-from Yolov7_StrongSORT_OSNet.yolov7.utils.torch_utils import torch_distributed_zero_first
+from yolov7.utils.torch_utils import torch_distributed_zero_first
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
@@ -93,6 +93,7 @@ def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=Fa
 
 class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
     """ Dataloader that reuses workers
+
     Uses same syntax as vanilla DataLoader
     """
 
@@ -111,6 +112,7 @@ class InfiniteDataLoader(torch.utils.data.dataloader.DataLoader):
 
 class _RepeatSampler(object):
     """ Sampler that repeats forever
+
     Args:
         sampler (Sampler)
     """
@@ -146,7 +148,6 @@ class LoadImages:  # for inference
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
         self.mask = mask
-
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -177,7 +178,6 @@ class LoadImages:  # for inference
                 if self.mask[i][1] > self.mask[i][0]:
                     img0 = img0[0:h, self.mask[i][0]:w]
                     w = w - self.mask[i][0]
-            # *******************************************
 
             if not ret_val:
                 self.count += 1
@@ -206,7 +206,7 @@ class LoadImages:  # for inference
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap
+        return path, img, img0, self.cap, w, h, self.frame
 
     def new_video(self, path):
         self.frame = 0
@@ -1009,7 +1009,7 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
     dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
     
-    if stride.is_cuda:    
+    if stride.is_cuda:
         stride = stride.cpu().numpy()
         
     if auto:  # minimum rectangle
@@ -1024,7 +1024,7 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
 
     if shape[::-1] != new_unpad:  # resize
         img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
-        
+
     top, bottom = int(round(float(dh) - 0.1)), int(round(float(dh) + 0.1))
     left, right = int(round(float(dw) - 0.1)), int(round(float(dw) + 0.1))
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
