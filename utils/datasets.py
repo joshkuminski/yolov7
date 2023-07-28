@@ -170,15 +170,30 @@ class LoadImages:  # for inference
             self.mode = 'video'
             ret_val, img0 = self.cap.read()
             # *******************************************
-            h, w, _ = img0.shape
+            try:
+                h, w, _ = img0.shape
+            except:
+                pass
+                
+            # Apply masking
+            # Make a copy of the image
+            img1 = img0[:]
+            # Create an empty mask with the same shape as the image
+            empty_mask = np.zeros(img0.shape[:2], dtype=np.uint8)
 
             for i in range(len(self.mask)):
-                if self.mask[i][0] > self.mask[i][1]:
-                    img0 = img0[self.mask[i][1]:h, 0:w]
-                    h = h - self.mask[i][1]
-                if self.mask[i][1] > self.mask[i][0]:
-                    img0 = img0[0:h, self.mask[i][0]:w]
-                    w = w - self.mask[i][0]
+                # Define the vertices of the polygon
+                vertices = np.array(self.mask[i], dtype=np.int32)
+
+                # Fill the polygon in the mask
+                cv2.fillPoly(empty_mask, [vertices], 255)
+
+                # Invert the mask
+                inverted_mask = cv2.bitwise_not(empty_mask)
+
+                # Apply the inverted mask to the image
+                img0 = cv2.bitwise_and(img0, img0, mask=inverted_mask)
+
             # *******************************************
             if not ret_val:
                 self.count += 1
@@ -207,7 +222,7 @@ class LoadImages:  # for inference
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap, w, h, self.frame, self.nframes
+        return path, img, img0, self.cap, w, h, self.frame, self.nframes, img1
 
     def new_video(self, path):
         self.frame = 0
