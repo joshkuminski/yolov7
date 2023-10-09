@@ -172,29 +172,28 @@ class LoadImages:  # for inference
             # *******************************************
             try:
                 h, w, _ = img0.shape
-            except:
-                pass
-                
-            # Apply masking
-            # Make a copy of the image
-            img1 = img0[:]
-            # Create an empty mask with the same shape as the image
-            empty_mask = np.zeros(img0.shape[:2], dtype=np.uint8)
+                # Apply masking
+                # Make a copy of the image
+                img1 = img0[:]
+                # Create an empty mask with the same shape as the image
+                empty_mask = np.zeros(img0.shape[:2], dtype=np.uint8)
 
-            for i in range(len(self.mask)):
-                # Define the vertices of the polygon
-                vertices = np.array(self.mask[i], dtype=np.int32)
+                for i in range(len(self.mask)):
+                    # Define the vertices of the polygon
+                    vertices = np.array(self.mask[i], dtype=np.int32)
 
-                # Fill the polygon in the mask
-                cv2.fillPoly(empty_mask, [vertices], 255)
+                    # Fill the polygon in the mask
+                    cv2.fillPoly(empty_mask, [vertices], 255)
 
-                # Invert the mask
-                inverted_mask = cv2.bitwise_not(empty_mask)
+                    # Invert the mask
+                    inverted_mask = cv2.bitwise_not(empty_mask)
 
-                # Apply the inverted mask to the image
-                img0 = cv2.bitwise_and(img0, img0, mask=inverted_mask)
+                    # Apply the inverted mask to the image
+                    img0 = cv2.bitwise_and(img0, img0, mask=inverted_mask)
+                # *******************************************
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
-            # *******************************************
             if not ret_val:
                 self.count += 1
                 self.cap.release()
