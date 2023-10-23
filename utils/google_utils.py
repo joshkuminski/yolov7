@@ -22,8 +22,10 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
 
         assets = ['yolov7.pt', 'yolov7-tiny.pt', 'yolov7x.pt', 'yolov7-d6.pt', 'yolov7-e6.pt', 
                     'yolov7-e6e.pt', 'yolov7-w6.pt']
+        OV_assets = ['yolov7-OVcustom-v1_4.pt']
         #tag = subprocess.check_output('git submodule foreach git log -1 --tags --pretty=%D', shell=True).decode().split()[-1]
         tag='v0.1'
+        OV_tag = 'v1.4'
 
         name = str(file.name)
         if name in assets:
@@ -47,6 +49,26 @@ def attempt_download(file, repo='WongKinYiu/yolov7'):
                 print('')
                 return
 
+        if name in OV_assets:
+            msg = f'{file} missing, try downloading from https://github.com/joshkuminski/OpenVision/releases/'
+            redundant = False  # second download option
+            try:  # GitHub
+                url = f'https://github.com/joshkuminski/OpenVision/releases/download/{OV_tag}/{name}'
+                print(f'Downloading {url} to {file}...')
+                torch.hub.download_url_to_file(url, file)
+                assert file.exists() and file.stat().st_size > 1E6  # check
+            except Exception as e:  # GCP
+                print(f'Download error: {e}')
+                assert redundant, 'No secondary mirror'
+                url = f'https://storage.googleapis.com/{repo}/ckpt/{name}'
+                print(f'Downloading {url} to {file}...')
+                os.system(f'curl -L {url} -o {file}')  # torch.hub.download_url_to_file(url, weights)
+            finally:
+                if not file.exists() or file.stat().st_size < 1E6:  # check
+                    file.unlink(missing_ok=True)  # remove partial downloads
+                    print(f'ERROR: Download failure: {msg}')
+                print('')
+                return
 
 def gdrive_download(id='', file='tmp.zip'):
     # Downloads a file from Google Drive. from yolov7.utils.google_utils import *; gdrive_download()
